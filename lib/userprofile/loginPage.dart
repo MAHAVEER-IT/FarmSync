@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:farmsync/userprofile/Auth_firebase.dart';
 import 'package:farmsync/userprofile/signupPage.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 import '../colors/colors.dart';
 
@@ -17,18 +19,29 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   bool _isBlur = false;
   bool _showText = false;
-  bool _password = true;
+  bool _passwordVisible = true;
+
+  TextEditingController _email = TextEditingController();
+  TextEditingController _password = TextEditingController();
+
+  String? _emailError;
+  String? _passwordError;
+
+  RegExp emailRegExp = RegExp(
+    r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+  );
+
   @override
   void initState() {
     super.initState();
 
-    Timer(Duration(seconds: 2), () {
+    Timer(Duration(seconds: 1), () {
       setState(() {
         _isBlur = true;
       });
     });
 
-    Timer(Duration(seconds: 2), () {
+    Timer(Duration(seconds: 1), () {
       setState(() {
         _showText = true;
       });
@@ -90,7 +103,7 @@ class _LoginPageState extends State<LoginPage> {
                             Shadow(
                               blurRadius: 10.0,
                               color: Colors.black45,
-                              offset: Offset(2, 2),
+                              offset: Offset(4, 4),
                             ),
                           ],
                         ),
@@ -238,13 +251,14 @@ class _LoginPageState extends State<LoginPage> {
         Container(
           width: MediaQuery.sizeOf(context).width * 0.9,
           child: TextFormField(
+            controller: _email,
             decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              label: Text("Email"),
-              suffixIcon: Icon(Icons.email_outlined),
-            ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                label: Text("Email"),
+                suffixIcon: Icon(Icons.email_outlined),
+                errorText: _emailError),
           ),
         ),
         SizedBox(
@@ -254,22 +268,24 @@ class _LoginPageState extends State<LoginPage> {
           width: MediaQuery.sizeOf(context).width * 0.9,
           child: Form(
             child: TextFormField(
-              obscureText: _password,
+              controller: _password,
+              obscureText: _passwordVisible,
               decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                label: Text("Password"),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _password = !_password;
-                    });
-                  },
-                  icon:
-                      Icon(_password ? Icons.visibility_off : Icons.visibility),
-                ),
-              ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  label: Text("Password"),
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _passwordVisible = !_passwordVisible;
+                      });
+                    },
+                    icon: Icon(_passwordVisible
+                        ? Icons.visibility_off
+                        : Icons.visibility),
+                  ),
+                  errorText: _passwordError),
             ),
           ),
         ),
@@ -296,7 +312,47 @@ class _LoginPageState extends State<LoginPage> {
           width: MediaQuery.sizeOf(context).width * 0.9,
           height: MediaQuery.sizeOf(context).height * 0.055,
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              bool isValid = true;
+              if (!emailRegExp.hasMatch(_email.text)) {
+                setState(() {
+                  _emailError = 'Invalid Email';
+                });
+                Fluttertoast.showToast(
+                    msg: 'Invalid Email ',
+                    toastLength: Toast.LENGTH_LONG,
+                    gravity: ToastGravity.SNACKBAR,
+                    backgroundColor: Colors.black54,
+                    textColor: Colors.white,
+                    fontSize: 14);
+                print('Email error');
+                isValid = false;
+              } else {
+                _emailError = null;
+              }
+              if (_password.text.length < 5) {
+                _passwordError = 'password must be have 6 letters';
+                Fluttertoast.showToast(
+                    msg: 'password must be have 6 letters',
+                    toastLength: Toast.LENGTH_LONG,
+                    gravity: ToastGravity.SNACKBAR,
+                    backgroundColor: Colors.black54,
+                    textColor: Colors.white,
+                    fontSize: 14);
+                print('password error');
+                isValid = false;
+              } else {
+                _passwordError = null;
+              }
+
+              if (isValid) {
+                Authentication().Sinin(
+                  email: _email.text,
+                  password: _password.text,
+                  context: context,
+                );
+              }
+            },
             child: Text(
               "Log In",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
